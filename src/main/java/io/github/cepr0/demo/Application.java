@@ -6,11 +6,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.*;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -18,6 +24,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,8 +35,9 @@ import java.util.Map;
 
 @Slf4j
 @RestController
+@ControllerAdvice
 @SpringBootApplication
-public class Application implements WebMvcConfigurer {
+public class Application implements WebMvcConfigurer, ResponseBodyAdvice<Object> {
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
@@ -65,6 +73,17 @@ public class Application implements WebMvcConfigurer {
 	@Override
 	public void addInterceptors(final InterceptorRegistry registry) {
 		registry.addInterceptor(new IncomingInterceptor());
+	}
+
+	@Override
+	public boolean supports(final MethodParameter returnType, final Class<? extends HttpMessageConverter<?>> converterType) {
+		return true;
+	}
+
+	@Override
+	public Object beforeBodyWrite(final Object body, final MethodParameter returnType, final MediaType selectedContentType, final Class<? extends HttpMessageConverter<?>> selectedConverterType, final ServerHttpRequest request, final ServerHttpResponse response) {
+		log.info("[i] ResponseBodyAdvice: response body {}", body);
+		return body;
 	}
 
 	class OutgoingInterceptor implements ClientHttpRequestInterceptor {
